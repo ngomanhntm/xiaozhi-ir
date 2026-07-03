@@ -1,0 +1,116 @@
+#include <stdio.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/queue.h"
+#include "driver/rmt_rx.h"
+#include "esp_log.h"
+
+// ================================================================
+// Test mắt thu hồng ngoại bằng điều khiển điều hòa
+// Tương thích ESP-IDF v5.5.4 - Đọc trực tiếp từ header rmt_rx.h
+// ================================================================
+
+#define IR_RX_GPIO_NUM     GPIO_NUM_3   // Chân OUT của VS1838B cắm vào đây
+#define RMT_RX_RES_HZ     1000000      // 1MHz -> 1 tick = 1 micro giây (us)
+#define RMT_RX_MEM_SYMBOLS 128
+
+static const char *TAG = "IR_TEST";
+
+// Buffer tĩnh lưu xung nhận được
+static rmt_symbol_word_t rx_buffer[512];
+
+// Queue để truyền dữ liệu từ ISR callback sang task chính
+static QueueHandle_t rx_queue;
+
+// ISR Callback: chạy trong ngắt, gửi thông báo vào queue khi nhận xong 1 frame
+static bool IRAM_ATTR on_recv_done(rmt_channel_handle_t channel,
+                                   const rmt_rx_done_event_data_t *edata,
+                                   void *user_data)
+{
+    BaseType_t high_task_wakeup = pdFALSE;
+    QueueHandle_t queue = (QueueHandle_t)user_data;
+    xQueueSendFromISR(queue, edata, &high_task_wakeup);
+    return high_task_wakeup == pdTRUE;
+}
+
+extern "C" void app_main(void)
+{
+    ESP_LOGI(TAG, "================================================");
+    ESP_LOGI(TAG, "  IR Receiver Test - ESP-IDF v5.5.4");
+    ESP_LOGI(TAG, "  Chân OUT mắt thu VS1838B -> GPIO %d", IR_RX_GPIO_NUM);
+    ESP_LOGI(TAG, "================================================");
+
+    // ------------------------------------------------------------------
+    // 1. Tạo kênh nhận RMT RX
+    //    Chỉ có các field: gpio_num, clk_src, resolution_hz,
+    //    mem_block_symbols, intr_priority, flags
+    //    (KHÔNG có trans_queue_depth trong RX channel)
+    // ------------------------------------------------------------------
+    rmt_channel_handle_t rx_channel = NULL;
+    rmt_rx_channel_config_t rx_cfg = {};
+    rx_cfg.gpio_num         = IR_RX_GPIO_NUM;
+    rx_cfg.clk_src          = RMT_CLK_SRC_DEFAULT;
+    rx_cfg.resolution_hz    = RMT_RX_RES_HZ;
+    rx_cfg.mem_block_symbols = RMT_RX_MEM_SYMBOLS;
+    rx_cfg.intr_priority    = 0;
+    rx_cfg.flags.invert_in  = false;  // Mắt thu VS1838B: output HIGH khi rảnh
+    rx_cfg.flags.with_dma   = false;
+
+    ESP_ERROR_CHECK(rmt_new_rx_channel(&rx_cfg, &rx_channel));
+    ESP_LOGI(TAG, "Tao kenh RMT RX thanh cong");
+
+    // ------------------------------------------------------------------
+    // 2. Đăng ký callback (KHÔNG dùng glitch filter riêng trong v5.5.4)
+    //    Tên hàm chính xác: rmt_rx_register_event_callbacks
+    // ------------------------------------------------------------------
+    rx_queue = xQueueCreate(4, sizeof(rmt_rx_done_event_data_t));
+    rmt_rx_event_callbacks_t cbs = {};
+    cbs.on_recv_done = on_recv_done;
+    ESP_ERROR_CHECK(rmt_rx_register_event_callbacks(rx_channel, &cbs, rx_queue));
+    ESP_LOGI(TAG, "Dang ky callback thanh cong");
+
+    // ------------------------------------------------------------------
+    // 3. Enable kênh
+    // ------------------------------------------------------------------
+    ESP_ERROR_CHECK(rmt_enable(rx_channel));
+    ESP_LOGI(TAG, "Kich hoat kenh RMT RX thanh cong");
+
+    // ------------------------------------------------------------------
+    // 4. Cấu hình nhận - dùng signal_range_min/max_ns (nanoseconds)
+    //    Bộ lọc nhiễu trong v5.5.4 tích hợp qua signal_range_min_ns
+    //    - signal_range_min_ns: xung ngắn hơn giá trị này = nhiễu, bỏ qua
+    //    - signal_range_max_ns: xung dài hơn giá trị này = kết thúc frame
+    // ------------------------------------------------------------------
+    rmt_receive_config_t recv_cfg = {};
+    recv_cfg.signal_range_min_ns = 1000;              // 1us - phải < 3187ns (giới hạn phần cứng)
+    recv_cfg.signal_range_max_ns = 12 * 1000 * 1000; // 12ms = kết thúc frame IR điều hòa
+
+
+    ESP_LOGI(TAG, "SAN SANG! Hay chi dieu khien dieu hoa vao mat thu va bam nut...\n");
+
+    rmt_rx_done_event_data_t event;
+
+    while (1) {
+        // Bắt đầu lắng nghe 1 frame hồng ngoại
+        ESP_ERROR_CHECK(rmt_receive(rx_channel, rx_buffer, sizeof(rx_buffer), &recv_cfg));
+
+        // Chờ callback báo nhận xong (block vô hạn)
+        if (xQueueReceive(rx_queue, &event, portMAX_DELAY) == pdTRUE) {
+            ESP_LOGI(TAG, ">>> TIN HIEU IR! Nhan duoc %u xung <<<", (unsigned)event.num_symbols);
+
+            // In bảng xung để phân tích
+            printf("--- Phan tich xung (don vi: us = micro giay) ---\n");
+            for (size_t i = 0; i < event.num_symbols; i++) {
+                // Mỗi rmt_symbol_word_t chứa 2 nửa xung:
+                // duration0/level0 = nửa xung đầu
+                // duration1/level1 = nửa xung sau
+                printf("[%2u] %s:%4u | %s:%4u   ",
+                       (unsigned)i,
+                       event.received_symbols[i].level0 ? "H" : "L", (unsigned)event.received_symbols[i].duration0,
+                       event.received_symbols[i].level1 ? "H" : "L", (unsigned)event.received_symbols[i].duration1);
+                if ((i + 1) % 3 == 0) printf("\n");
+            }
+            printf("\n================================================\n\n");
+        }
+    }
+}

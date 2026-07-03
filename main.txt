@@ -1,0 +1,114 @@
+#include <stdio.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "driver/rmt_tx.h"
+#include "driver/rmt_encoder.h"
+#include "esp_log.h"
+
+// ================================================================
+// Test phát tín hiệu hồng ngoại (IR Transmitter Test)
+// Tương thích ESP-IDF v5.5.4 - Sử dụng RMT TX API & Copy Encoder
+// Tần số sóng mang hồng ngoại tiêu chuẩn: 38kHz
+// ================================================================
+
+#define IR_TX_GPIO_NUM     GPIO_NUM_3   // Chân GPIO nối vào LED hồng ngoại phát (qua điện trở 100 Ohm)
+#define RMT_TX_RES_HZ      1000000      // Tần số RMT 1MHz -> 1 tick = 1 micro giây (us)
+
+static const char *TAG = "IR_TX_TEST";
+
+// Định nghĩa chuỗi xung của nút bấm thu được từ log
+// Xung đầu (Start bit): L: 6184 us | H: 580 us
+// 7 xung dữ liệu:       L: 1582 us | H: 680 us
+// Xung dừng (Stop bit):  L: 1582 us | H: 1000 us (giữ HIGH chờ)
+static const rmt_symbol_word_t tx_symbols[] = {
+    // [0] Start/Header
+    { .duration0 = 6184, .level0 = 1, .duration1 = 580, .level1 = 0 },
+    
+    // [1] - [7] Data Bits
+    { .duration0 = 1582, .level0 = 1, .duration1 = 680, .level1 = 0 },
+    { .duration0 = 1582, .level0 = 1, .duration1 = 680, .level1 = 0 },
+    { .duration0 = 1582, .level0 = 1, .duration1 = 680, .level1 = 0 },
+    { .duration0 = 1582, .level0 = 1, .duration1 = 680, .level1 = 0 },
+    { .duration0 = 1582, .level0 = 1, .duration1 = 680, .level1 = 0 },
+    { .duration0 = 1582, .level0 = 1, .duration1 = 680, .level1 = 0 },
+    { .duration0 = 1582, .level0 = 1, .duration1 = 680, .level1 = 0 },
+    
+    // [8] Stop Bit
+    { .duration0 = 1582, .level0 = 1, .duration1 = 1000, .level1 = 0 }
+};
+
+extern "C" void app_main(void)
+{
+    ESP_LOGI(TAG, "================================================");
+    ESP_LOGI(TAG, "  IR Transmitter Test - ESP-IDF v5.5.4");
+    ESP_LOGI(TAG, "  GPIO LED phát IR -> GPIO %d", IR_TX_GPIO_NUM);
+    ESP_LOGI(TAG, "  Tần số phát sóng mang -> 38 kHz");
+    ESP_LOGI(TAG, "================================================");
+
+    // ------------------------------------------------------------------
+    // 1. Tạo kênh phát RMT TX
+    // ------------------------------------------------------------------
+    rmt_channel_handle_t tx_channel = NULL;
+    rmt_tx_channel_config_t tx_cfg = {};
+    tx_cfg.gpio_num         = IR_TX_GPIO_NUM;
+    tx_cfg.clk_src          = RMT_CLK_SRC_DEFAULT;
+    tx_cfg.resolution_hz    = RMT_TX_RES_HZ;
+    tx_cfg.mem_block_symbols = 64;
+    tx_cfg.trans_queue_depth = 4;
+    tx_cfg.intr_priority    = 0;
+    tx_cfg.flags.invert_out  = false; // Giữ tín hiệu chuẩn (không nghịch đảo cực phát)
+    tx_cfg.flags.with_dma   = false;
+
+    ESP_ERROR_CHECK(rmt_new_tx_channel(&tx_cfg, &tx_channel));
+    ESP_LOGI(TAG, "Tao kenh RMT TX thanh cong");
+
+    // ------------------------------------------------------------------
+    // 2. Tạo bộ điều chế sóng mang hồng ngoại (38 kHz, 33% duty cycle)
+    // ------------------------------------------------------------------
+    rmt_carrier_config_t carrier_cfg = {};
+    carrier_cfg.frequency_hz = 38000;
+    carrier_cfg.duty_cycle = 0.33; // 33% duty cycle (chuẩn phát IR tiết kiệm năng lượng và tránh nóng LED)
+    carrier_cfg.flags.polarity_active_low = false; // Phát sóng mang khi RMT level = 1 (HIGH)
+
+    ESP_ERROR_CHECK(rmt_apply_carrier(tx_channel, &carrier_cfg));
+    ESP_LOGI(TAG, "Cau hinh song mang 38kHz thanh cong");
+
+    // ------------------------------------------------------------------
+    // 3. Kích hoạt kênh phát
+    // ------------------------------------------------------------------
+    ESP_ERROR_CHECK(rmt_enable(tx_channel));
+    ESP_LOGI(TAG, "Kich hoat kenh RMT TX thanh cong");
+
+    // ------------------------------------------------------------------
+    // 4. Khởi tạo RMT Copy Encoder để gửi chuỗi xung trực tiếp
+    // ------------------------------------------------------------------
+    rmt_encoder_handle_t copy_encoder = NULL;
+    rmt_copy_encoder_config_t copy_encoder_cfg = {};
+    ESP_ERROR_CHECK(rmt_new_copy_encoder(&copy_encoder_cfg, &copy_encoder));
+    ESP_LOGI(TAG, "Tao copy encoder thanh cong");
+
+    // Cấu hình truyền
+    rmt_transmit_config_t transmit_cfg = {};
+    transmit_cfg.loop_count = 0; // Phát đúng 1 lần duy nhất cho mỗi cuộc gọi rmt_transmit
+
+    ESP_LOGI(TAG, "BAT DAU: Gui tin hieu IR lap lai moi 3 giay...\n");
+
+    while (1) {
+        ESP_LOGI(TAG, "--- Dang phat tin hieu IR ---");
+        
+        // Gửi xung 3 lần liên tiếp cách nhau 140ms để giả lập giống tay bấm thật (gửi lặp chống nhiễu)
+        for (int i = 0; i < 3; i++) {
+            ESP_ERROR_CHECK(rmt_transmit(tx_channel, copy_encoder, tx_symbols, sizeof(tx_symbols), &transmit_cfg));
+            // Đợi truyền xong
+            ESP_ERROR_CHECK(rmt_tx_wait_all_done(tx_channel, portMAX_DELAY));
+            
+            // Giãn cách giữa các lần lặp là 140ms (như tay cầm phát thực tế)
+            vTaskDelay(pdMS_TO_TICKS(140));
+        }
+
+        ESP_LOGI(TAG, "Da phat xong 1 chu ky (3 lan lap)!");
+        
+        // Chờ 3 giây trước khi phát lại chu kỳ tiếp theo
+        vTaskDelay(pdMS_TO_TICKS(3000));
+    }
+}
