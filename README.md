@@ -35,6 +35,7 @@ The stable version of v1 is 1.9.2. You can switch to v1 by running `git checkout
 - Device-side MCP for device control (Speaker, LED, Servo, GPIO, etc.)
 - Cloud-side MCP to extend large model capabilities (smart home control, PC desktop operation, knowledge search, email, etc.)
 - Customizable wake words, fonts, emojis, and chat backgrounds with online web-based editing ([Custom Assets Generator](https://github.com/78/xiaozhi-assets-generator))
+- **Custom IR Toy Robot Controller**: Integrates an IR transmitter (RMT 38kHz) and receiver (VS1838B) to control toy robots via voice commands (see [README_IR_CONTROL.md](README_IR_CONTROL.md))
 
 ## Hardware
 
@@ -122,6 +123,7 @@ The firmware connects to the official [xiaozhi.me](https://xiaozhi.me) server by
 ### Developer Documentation
 
 - [Custom Board Guide](docs/custom-board.md) - Learn how to create custom boards for XiaoZhi AI
+- [IR Robot Dog Control Guide](README_IR_CONTROL.md) - Learn how to integrate an IR transmitter/receiver to control toy robots via AI voice commands
 - [MCP Protocol IoT Control Usage](docs/mcp-usage.md) - Learn how to control IoT devices via MCP protocol
 - [MCP Protocol Interaction Flow](docs/mcp-protocol.md) - Device-side MCP protocol implementation
 - [MQTT + UDP Hybrid Communication Protocol Document](docs/mqtt-udp.md)
