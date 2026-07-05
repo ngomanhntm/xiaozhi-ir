@@ -123,6 +123,7 @@ The firmware connects to the official [xiaozhi.me](https://xiaozhi.me) server by
 ### Developer Documentation
 
 - [Custom Board Guide](docs/custom-board.md) - Learn how to create custom boards for XiaoZhi AI
+- [Custom Emojis & Themes Guide](docs/custom-emoji-theme.md) - Learn how to design custom LCD themes and load exclusive emoji collections
 - [IR Robot Dog Control Guide](README_IR_CONTROL.md) - Learn how to integrate an IR transmitter/receiver to control toy robots via AI voice commands
 - [MCP Protocol IoT Control Usage](docs/mcp-usage.md) - Learn how to control IoT devices via MCP protocol
 - [MCP Protocol Interaction Flow](docs/mcp-protocol.md) - Device-side MCP protocol implementation

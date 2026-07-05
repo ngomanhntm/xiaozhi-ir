@@ -127,6 +127,7 @@ Mặc định, firmware sẽ kết nối đến máy chủ chính thức [xiaozh
 ### Tài liệu dành cho lập trình viên
 
 - [Hướng dẫn thiết lập Board tùy chỉnh](docs/custom-board.md) - Học cách khai báo chân phần cứng cho XiaoZhi AI
+- [Hướng dẫn thêm chủ đề & biểu cảm tùy chỉnh](docs/custom-emoji-theme.md) - Học cách thiết kế giao diện LCD và nạp bộ emoji độc quyền
 - [Hướng dẫn điều khiển IoT bằng giao thức MCP](docs/mcp-usage.md) - Cách điều khiển thiết bị ngoại vi qua giao thức MCP
 - [Luồng tương tác của giao thức MCP](docs/mcp-protocol.md) - Triển khai giao thức MCP phía thiết bị (ESP32)
 - [Tài liệu giao thức truyền thông hỗn hợp MQTT + UDP](docs/mqtt-udp.md)
