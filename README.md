@@ -77,7 +77,7 @@ static void print_rx_result(pulse_t* buf, int count, int frame_num) {
 Sau khi giải mã thành công, tháo mắt thu hồng ngoại ra và tiến hành lắp đặt mạch phát hoàn chỉnh bao gồm LED phát hồng ngoại nối tiếp điện trở 100 Ohm và các linh kiện âm thanh, màn hình của Xiaozhi theo sơ đồ sau:
 
 <div align="center">
-  <img src="docs/images/full_schematic.png" width="700" alt="Sơ đồ mạch hoàn chỉnh cho Robot Dog">
+  <img src="docs/images/wiring_full.jpg" width="700" alt="Sơ đồ mạch hoàn chỉnh cho Robot Dog">
   <p><i>Sơ đồ mạch hoàn chỉnh tích hợp LED phát hồng ngoại (khoanh đỏ), màn hình LCD, Micro, Loa và Pin Lipo</i></p>
 </div>
 
