@@ -32,7 +32,7 @@ Tài liệu này là hướng dẫn thực hành từng bước giúp bạn tự
 Tiến hành kết nối mắt thu VS1838B vào bo mạch ESP32-S3 theo sơ đồ lắp đặt dưới đây:
 
 <div align="center">
-  <img src="docs/images/ir_sniffing_setup.png" width="650" alt="Sơ đồ nối dây mắt thu hồng ngoại VS1838B">
+  <img src="docs/images/ir_sniffing_setup.jpg" width="650" alt="Sơ đồ nối dây mắt thu hồng ngoại VS1838B">
   <p><i>Sơ đồ nối mắt thu hồng ngoại và hiển thị log giải mã trên Serial Monitor qua cáp USB</i></p>
 </div>
 
