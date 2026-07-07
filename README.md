@@ -221,3 +221,22 @@ Hệ thống hoạt động ổn định với thời gian xử lý và phản h
 | **Trung bình** | **830.0** | **1483.3** | **190.0** | **15000.0** | **17503.3 ms (~17.5 giây)** |
 
 *(Lưu ý: Thời gian phát lệnh hồng ngoại đơn lẻ cố định là 1000ms vì ESP32 phải duy trì phát liên tục 9 frame xung hồng ngoại cách nhau 120ms để robot cún nhận diện lệnh nhạy nhất. Chuỗi lệnh biểu diễn mất trung bình 15 giây vì cún thực hiện tuần tự nhiều hành động: bật nhạc, gật đầu, duỗi chân, tiến, xoay vòng rồi đứng ngồi chào mừng).*
+
+---
+
+### 3. Kết quả tích hợp bộ biểu cảm tùy chỉnh (Emoji & Theme)
+
+Bộ 21 biểu cảm chú khủng long xanh đã được tích hợp thành công lên màn hình LCD TFT 1.54 inch của robot. Kết quả đạt được:
+
+*   ✅ **21/21 biểu cảm** hiển thị đúng trạng thái, ảnh trong suốt nền đen sắc nét trên màn hình LCD.
+*   ✅ **Tự động chuyển đổi biểu cảm** theo nội dung hội thoại với AI (ví dụ: AI kể chuyện vui → robot hiển thị mặt `laughing`, AI nói lời buồn → robot hiển thị mặt `sad`).
+*   ✅ **Chuyển đổi theme bằng giọng nói:** Ra lệnh *"Hãy đổi sang giao diện khủng long"* → robot tự động đổi toàn bộ bộ biểu cảm.
+*   ✅ **Ảnh được tự động crop và resize** về kích thước chuẩn 200×200 pixels bởi script Python, đảm bảo nằm chính giữa màn hình không bị méo.
+
+| Tiêu chí | Kết quả |
+|:---|:---|
+| Số lượng biểu cảm tích hợp | 21/21 ✅ |
+| Định dạng ảnh | PNG trong suốt (nền đen LCD) |
+| Độ phân giải hiển thị | 200 × 200 pixels |
+| Chuyển biểu cảm theo cảm xúc AI | Hoạt động ổn định ✅ |
+| Đổi theme bằng giọng nói | Hoạt động ổn định ✅ |
