@@ -11,6 +11,7 @@ Tài liệu này là hướng dẫn thực hành từng bước giúp bạn tự
 1.  **Giải mã remote gốc:** Bắt và phân tích tín hiệu hồng ngoại phát ra từ remote điều khiển gốc của robot cún để trích xuất tập lệnh HEX tương ứng.
 2.  **Giả lập bộ điều khiển:** Lập trình ESP32-S3 phát sóng mang hồng ngoại 38kHz thay thế chiếc remote.
 3.  **Tích hợp điều khiển giọng nói:** Liên kết lệnh hồng ngoại với công cụ MCP (Model Context Protocol) để khi bé ra lệnh (ví dụ: *"đi thẳng"*, *"quay trái"*), mô hình AI sẽ tự động kích hoạt robot di chuyển.
+4.  **Tùy biến biểu cảm sinh động (Emoji & Theme):** Thiết kế và lập trình tích hợp bộ 21 biểu cảm khuôn mặt trong suốt độc quyền lên màn hình LCD TFT của robot, tự động hiển thị biểu cảm vui, buồn, ngạc nhiên... tương ứng theo trạng thái hội thoại và câu trả lời của AI.
 
 ---
 
